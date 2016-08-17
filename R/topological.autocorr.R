@@ -1,23 +1,23 @@
 #' Calculate data for autocorrelation plots of tree topologies from MCMC analyses
-#' 
+#'
 #' This function takes a list of rwty.trees objects, and calculates the
 #' mean phylogenetic distance at a series of roughly even sampling intervals.
 #' In really well behaved MCMC analyses, the mean distance will stay constant
-#' as the sampling interval increases. If there is autocorrelation, it will 
+#' as the sampling interval increases. If there is autocorrelation, it will
 #' increase as the sampling interval increases, and is expected to level
 #' off when the autocorrelation decreases to zero. The function calculates
 #' path distances, though other distances could also be employed.
 #'
-#' @param chains A list of rwty.trees objects. 
-#' @param burnin The number of trees to eliminate as burnin 
-#' @param autocorr.intervals The number of sampling intervals to use. These will be spaced evenly between 1 and the max.sampling.interval 
+#' @param chains A list of rwty.trees objects.
+#' @param burnin The number of trees to eliminate as burnin
+#' @param autocorr.intervals The number of sampling intervals to use. These will be spaced evenly between 1 and the max.sampling.interval
 #' @param max.sampling.interval The largest sampling interval for which you want to calculate the mean distance between pairs of trees (default is 10 percent of the length of the list of trees).
 #' @param squared TRUE/FALSE use squared tree distances (necessary to calculate approximate ESS)
 #' @param treedist the type of tree distance metric to use, can be 'PD' for path distance or 'RF' for Robinson Foulds distance
 #' @param use.all.samples (TRUE/FALSE). Whether to calculate autocorrelation from all possible pairs of trees in your chain. The default is FALSE, in which case 500 samples are taken at each sampling interval. This is sufficient to get reasonably accurate estimates of the approximate ESS. Setting this to TRUE will give you slightly more accurate ESS estimates, at the cost of potentially much longer execution times.
 #'
-#' @return A data frame with one row per sampling interval, per chain. 
-#' The first column is the sampling interval. The second column is the mean 
+#' @return A data frame with one row per sampling interval, per chain.
+#' The first column is the sampling interval. The second column is the mean
 #' path distance between pairs of trees from that sampling interval. The third
 #' column is the chain ID.
 #'
@@ -43,7 +43,7 @@ topological.autocorr <- function(chains, burnin = 0, max.sampling.interval = NA,
         max.sampling.interval = floor((N - burnin) * 0.1)
     }
 
-    indices = seq(from = burnin + 1, to = N, by = 1)   
+    indices = seq(from = burnin + 1, to = N, by = 1)
 
     trees = lapply(chains, function(x) x[['trees']][indices])
 
@@ -84,7 +84,7 @@ tree.autocorr <- function(tree.list, max.sampling.interval = NA, autocorr.interv
     thinnings <- unique(as.integer(seq(from = 1, to = max.thinning, length.out=autocorr.intervals)))
 
 
-    r <- lapply(as.list(thinnings), get.sequential.distances, tree.list, squared = squared, treedist = treedist, use.all.samples = use.all.samples) 
+    r <- lapply(as.list(thinnings), get.sequential.distances, tree.list, squared = squared, treedist = treedist, use.all.samples = use.all.samples)
     r <- data.frame(matrix(unlist(r), ncol=2, byrow=T))
     names(r) = c("topo.distance", "sampling.interval")
 
@@ -135,7 +135,7 @@ path.dist.squared <- function (pair, trees, check.labels = FALSE){
 }
 
 
-path.dist <- function (pair, trees, check.labels = FALSE) 
+path.dist <- function (pair, trees, check.labels = FALSE)
 {
 
     # a trimmed down version of the phangorn tree.dist function
@@ -169,9 +169,9 @@ path.dist <- function (pair, trees, check.labels = FALSE)
 
 
 get.sequential.distances <- function(thinning, tree.list, N=500, squared = FALSE, treedist = 'PD', use.all.samples = FALSE){
-    
 
-    processors = get.processors(NULL)
+
+    processors = get.processors(1)
 
     starts = 1:(length(tree.list) - thinning)
     ends = starts + thinning
@@ -189,13 +189,13 @@ get.sequential.distances <- function(thinning, tree.list, N=500, squared = FALSE
 
     if(treedist == 'PD'){
         if(squared == TRUE){
-            distances <- mclapply(pairs, path.dist.squared, trees = tree.list, mc.cores = processors)        
+            distances <- mclapply(pairs, path.dist.squared, trees = tree.list, mc.cores = processors)
         }else{
             distances <- mclapply(pairs, path.dist, trees = tree.list, mc.cores = processors )
         }
     }else if(treedist == 'RF'){
         if(squared == TRUE){
-            distances <- mclapply(pairs, rf.dist.squared, trees = tree.list, mc.cores = processors)        
+            distances <- mclapply(pairs, rf.dist.squared, trees = tree.list, mc.cores = processors)
         }else{
             distances <- mclapply(pairs, rf.dist, trees = tree.list, mc.cores = processors)
         }
@@ -210,5 +210,3 @@ get.sequential.distances <- function(thinning, tree.list, N=500, squared = FALSE
     result$sampling.interval <- thinning
     return(result)
 }
-
-
